@@ -136,7 +136,7 @@ def main(api_key, pdf_path, available_labor_path):
     compile_labor_data_to_excel(matched_labor, "matched_labor_data.xlsx")
 
 if __name__ == "__main__":
-    api_key = 'sk-proj-YpfjfEm43Yrpgsu4B8UuT3BlbkFJ8vj0RafK5qFv6GC260pI'
+    api_key = os.environ.get('OPENAI_API_KEY')
     pdf_path = '/content/01 SPECIAL PROVISIONS & SAMPLE AGREEMENT (RMD2504001).PDF'
     available_labor_path = '/content/Active Union Employee List 08-02-2024.xlsx'
     main(api_key, pdf_path, available_labor_path)
