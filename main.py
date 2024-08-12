@@ -1,4 +1,5 @@
-import fitz  # PyMuPDF for handling PDFs
+from flask import Flask, request, redirect, url_for, render_template, send_file
+import fitz  
 from PIL import Image
 import pytesseract
 import io
@@ -8,7 +9,7 @@ import os
 import re
 import pdfplumber
 from openai import OpenAI
-
+app = Flask(__name__)
 # Global variable for Tier 2 zip codes
 tier_2_zip_codes = [
     '90001', '90002', '90003', '90005', '90006', '90007', '90008', '90010', '90011', '90012',
@@ -26,15 +27,14 @@ tier_2_zip_codes = [
 ]
 
 def extract_text_from_pdf(pdf_path, chunk_size=100):
-    """Extract text and images from PDF by chunks."""
-    with fitz.open(pdf_path) as doc:
+       with fitz.open(pdf_path) as doc:
         for start in range(0, doc.page_count, chunk_size):
             text = ''
             for page_num in range(start, min(start + chunk_size, doc.page_count)):
                 page = doc.load_page(page_num)
                 text += page.get_text("text")
 
-                # OCR for images in PDF
+               
                 for img_index in page.get_images(full=True):
                     xref = img_index[0]
                     base_image = doc.extract_image(xref)
@@ -94,49 +94,65 @@ def extract_zip_codes_from_text(text) :
 
 
 def compile_labor_data_to_excel(data, filename="labor_data.xlsx"):
-    """Compiles extracted labor data into an Excel file."""
     df = pd.DataFrame(data)
     df.to_excel(filename, index=False)
     print(f"Data compiled to Excel file: {filename}")
 
 def compare_with_available_labor(required_zip_codes, available_labor_path):
-    """Compares required zip codes with available labor zip codes and compiles the matching results."""
     available_labor_df = pd.read_excel(available_labor_path)
     # Filter available labor by required zip codes
     matched_labor = available_labor_df[available_labor_df['ZIP/Postal Code'].isin(required_zip_codes)]
     matched_labor['Tier 2'] = matched_labor['ZIP/Postal Code'].apply(lambda x : "Yes" if x in tier_2_zip_codes else  "No")
     return matched_labor
-
-def main(api_key, pdf_path, available_labor_path):
-    """Main function to process the PDF and handle labor data."""
-    client = openai.Client(api_key=api_key)
-    output_directory = "."
-    all_zip_codes =set()
-
-
-    for i, text_chunk in enumerate(extract_text_from_pdf(pdf_path)):
-        analyze_text_chunk(text_chunk,i, client)
-        #results.append(result)
-        print(f"Processed chunk {i+1}")
-    compile_summaries(output_directory)
-    for filename in os.listdir(output_directory):
-      if filename.startswith("final_summary") and filename.endswith(".txt"):
-        with open(os.path.join(output_directory,filename),"r") as file:
-          content = file.read()
-          zip_codes = extract_zip_codes_from_text(content)
-          all_zip_codes.update(zip_codes)
-
-
-
-
-    # Comparing with available labor
-    matched_labor = compare_with_available_labor(all_zip_codes, available_labor_path)
-
-    # Compile results to Excel
-    compile_labor_data_to_excel(matched_labor, "matched_labor_data.xlsx")
+    
+@app.route('/', methods=['GET', 'POST'])
+def upload_files():
+    if request.method == 'POST':
+        if 'pdf_file' not in request.files or 'excel_file' not in request.files:
+            return 'No file part'
+        
+        pdf_file = request.files['pdf_file']
+        excel_file = request.files['excel_file']
+        
+        if pdf_file.filename == '' or excel_file.filename == '':
+            return 'No selected file'
+        
+        # Ensure the 'uploads' directory exists
+        if not os.path.exists('uploads'):
+            os.makedirs('uploads')
+        
+        pdf_path = os.path.join('uploads', pdf_file.filename)
+        excel_path = os.path.join('uploads', excel_file.filename)
+        
+        pdf_file.save(pdf_path)
+        excel_file.save(excel_path)
+        
+        api_key = os.environ.get('OPENAI_API_KEY')  # Corrected as.environ to os.environ
+        all_zip_codes = set()
+        client = openai.Client(api_key=api_key)
+        output_directory = "."
+        
+        for i, text_chunk in enumerate(extract_text_from_pdf(pdf_path)):
+            analyze_text_chunk(text_chunk, i, client)
+            print(f"Processed chunk {i+1}")
+        
+        compile_summaries(output_directory)
+        
+        for filename in os.listdir(output_directory):
+            if filename.startswith("final_summary") and filename.endswith(".txt"):
+                with open(os.path.join(output_directory, filename), "r") as file:
+                    content = file.read()
+                    zip_codes = extract_zip_codes_from_text(content)
+                    all_zip_codes.update(zip_codes)
+        
+        # Comparing with available labor
+        matched_labor = compare_with_available_labor(all_zip_codes, excel_path)
+        compile_labor_data_to_excel(matched_labor, "matched_labor_data.xlsx")
+        
+        return send_file("matched_labor_data.xlsx", as_attachment=True)
+    
+    return render_template('upload_form.html')
 
 if __name__ == "__main__":
-    api_key = os.environ.get('OPENAI_API_KEY')
-    pdf_path = '/content/01 SPECIAL PROVISIONS & SAMPLE AGREEMENT (RMD2504001).PDF'
-    available_labor_path = '/content/Active Union Employee List 08-02-2024.xlsx'
-    main(api_key, pdf_path, available_labor_path)
+    app.run(debug=True)
+
