@@ -6,3 +6,4 @@ pymupdf
 Pillow
 pytesseract
 gunicorn==22.0.0
+pandas
