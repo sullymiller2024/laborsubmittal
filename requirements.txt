@@ -5,4 +5,4 @@ pdfplumber
 pymupdf
 Pillow
 pytesseract
-gunicorn
+gunicorn==22.0.0
