@@ -1,7 +1,6 @@
 from flask import Flask, request, redirect, url_for, render_template, send_file
 import fitz  
-from PIL import Image
-import pytesseract
+
 import io
 import pandas as pd
 import openai
@@ -33,17 +32,6 @@ def extract_text_from_pdf(pdf_path, chunk_size=100):
             for page_num in range(start, min(start + chunk_size, doc.page_count)):
                 page = doc.load_page(page_num)
                 text += page.get_text("text")
-
-               
-                for img_index in page.get_images(full=True):
-                    xref = img_index[0]
-                    base_image = doc.extract_image(xref)
-                    image_bytes = base_image["image"]
-                    try:
-                        image = Image.open(io.BytesIO(image_bytes))
-                        text += pytesseract.image_to_string(image)
-                    except Exception as e:
-                        print(f"Error processing image on page {page_num}: {e}")
             yield text
 
 def analyze_text_chunk(text_chunk,chunk_index, client):
