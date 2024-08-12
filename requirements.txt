@@ -5,3 +5,4 @@ pdfplumber
 pymupdf
 Pillow
 pytesseract
+gunicorn
