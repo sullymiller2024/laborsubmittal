@@ -103,7 +103,7 @@ def compare_with_available_labor(required_zip_codes, available_labor_path):
 @app.route('/', methods=['GET', 'POST'])
 def upload_files():
     if request.method == 'POST':
-        if 'pdf_file' not in request.files or 'excel_file' not in request.files:
+        if 'pdf_file' not in request.files or 'excel_file' not in request.files or 'excel_file' not in request.files:
             return 'No file part'
         
         pdf_file = request.files['pdf_file']
@@ -126,10 +126,13 @@ def upload_files():
         all_zip_codes = set()
         client = openai.Client(api_key=api_key)
         output_directory = "."
+        summary_df = pd.DataFrame(columns=['Category','Percentage and Conditions'])
         
         for i, text_chunk in enumerate(extract_text_from_pdf(pdf_path)):
-            analyze_text_chunk(text_chunk, i, client)
+            summary_df = analyze_text_chunk(text_chunk, i, client,summary_df)
             print(f"Processed chunk {i+1}")
+        summary_df.to_excel("labor_summary.xlsx",index=False)   
+           
         
         compile_summaries(output_directory)
         
