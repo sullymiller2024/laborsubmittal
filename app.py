@@ -137,7 +137,7 @@ def upload_files():
         excel_file.save(excel_path)
         task = proceess_files.delay(pdf_path, excel_path)
         return f'Task {task.id} is running . Check the result later.'
-     return render_template('upload_form.html')
+    return render_template('upload_form.html')
 
 @celery.task
 def process_files(pdf_path, excel_path):
