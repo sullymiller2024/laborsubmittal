@@ -33,7 +33,7 @@ def extract_text_from_pdf(pdf_path, chunk_size=100):
                 text += page.get_text("text")
             yield text
 
-def analyze_text_chunk(text_chunk,chunk_index, client):
+def analyze_text_chunk(text_chunk,chunk_index, client,summary_df):
      prompt_text = """
     Given the text extracted from a construction project PDF, identify and summarize the labor information based on the categories mentioned:
     - Targeted Labor: Specify the percentage and conditions for targeted labor.
@@ -53,14 +53,19 @@ def analyze_text_chunk(text_chunk,chunk_index, client):
         ]
      )
      result = response.choices[0].message.content
-     '''for text_chunk in extract_text_from_pdf(pdf_path):
-      result, _ = analyze_text_chunck(text_chunk,i,client)
-      results.append(result)
-      extracted_zip_codes = extract_zip_codes_from_text(result)
-      all_zip_codes.update(extracted_zip_codes)'''
+    #Append result to summary_df DataFrame
+     categories = ["Trageted Labor", "Local Labor", "Minority Labor", "Women/Female Labor"]
+     for category in categories:
+         match = re.search(f'{category}: (.*?)\n',result)
+         if match:
+             percentage_conditions = match.group(1)
+             summary_df = summary_df.append({'Category':category,'Percentage and Conditions': percentage_conditions},ignore_index=True)
+             
+
     # Save the result to a text file
      with open(f"analysis_result_chunk_{chunk_index}.txt", "w") as file:
         file.write(result)
+     return summary_df    
 def compile_summaries(output_directory):
     summaries = []
     for filename in os.listdir(output_directory):
