@@ -146,10 +146,14 @@ def upload_files():
         # Comparing with available labor
         matched_labor = compare_with_available_labor(all_zip_codes, excel_path)
         compile_labor_data_to_excel(matched_labor, "matched_labor_data.xlsx")
-        
-        return send_file("matched_labor_data.xlsx", as_attachment=True)
+        #return the rendered template with files_ready=True
+        return render_template('upload_form.html', files_ready=False)
     
-    return render_template('upload_form.html')
+    return render_template('upload_form.html', file_ready=False)
+@app.rout('/download/<filename>')
+def download_file(filename):
+    return send_file(filename, as_attachment=True)
+    
 
 if __name__ == "__main__":
     app.run(debug=True)
