@@ -12,6 +12,12 @@
       <input type="file" name="excel_file" required> 
       <input type="submit" value="Upload"> 
     </form> 
+
+    {% if files_ready %}
+    <h2>Download Results</h2>
+    <a href="{{ url_for('download_file', filename='final_summary.txt') }}">Download Summary</a><br>
+    <a href="{{ url_for('download_file', filename='matched_labor_data.xlsx') }}">Download Matched Labor Data</a>
+    {% endif %}
 </body> 
 </html>
 
