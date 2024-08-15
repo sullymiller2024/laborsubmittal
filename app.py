@@ -1,4 +1,5 @@
 from flask import Flask, request, redirect, url_for, render_template, send_file
+from celery import Celery
 import fitz  
 import io
 import pandas as pd
@@ -8,6 +9,11 @@ import re
 import pdfplumber
 from openai import OpenAI
 app = Flask(__name__)
+app.config.update(
+    CELERY_BROKER_URL = 'REDIS://LOCALHOST:6379/0',
+    CELERY_RESULT_BACKEND='redis://localhost:6379/0'
+)
+celery = make_celery(app)
 # Global variable for Tier 2 zip codes
 tier_2_zip_codes = [
     '90001', '90002', '90003', '90005', '90006', '90007', '90008', '90010', '90011', '90012',
@@ -121,6 +127,12 @@ def upload_files():
         
         pdf_file.save(pdf_path)
         excel_file.save(excel_path)
+        task = proceess_files.deploy(pdf_path, excel_path)
+        return f'Task {task.id} is running . Check the result later.'
+     return render_template('upload_form.html')
+
+@celery.task
+def process_files(pdf_path, excel_path):
         
         api_key = os.environ.get('OPENAI_API_KEY')  # Corrected as.environ to os.environ
         all_zip_codes = set()
