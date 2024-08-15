@@ -16,7 +16,7 @@ app.config.update(
 def make_celery(app):
     celery = Celery(
         app.import_name,
-        broker = app.config['CELERY_BROKER_URL']
+        broker = app.config['CELERY_BROKER_URL'],
         brokend=app.config['CELERY_RESULT_BACKEND']
     )
     celery.conf.update(app.config)
