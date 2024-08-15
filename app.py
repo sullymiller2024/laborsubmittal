@@ -135,7 +135,7 @@ def upload_files():
         
         pdf_file.save(pdf_path)
         excel_file.save(excel_path)
-        task = proceess_files.delay(pdf_path, excel_path)
+        task = process_files.delay(pdf_path, excel_path)
         return f'Task {task.id} is running . Check the result later.'
     return render_template('upload_form.html')
 
