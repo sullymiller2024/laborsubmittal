@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect, url_for, render_template, send_file
+wfrom flask import Flask, request, redirect, url_for, render_template, send_file
 import fitz  
 import io
 import pandas as pd
@@ -95,7 +95,10 @@ def compare_with_available_labor(required_zip_codes, available_labor_path):
     # Filter available labor by required zip codes
     matched_labor = available_labor_df[available_labor_df['ZIP/Postal Code'].isin(required_zip_codes)]
     matched_labor['Tier 2'] = matched_labor['ZIP/Postal Code'].apply(lambda x : "Yes" if x in tier_2_zip_codes else  "No")
-    return matched_labor
+    job_title_counts = matched_labor{'Free Form Job Title'].value_counts().reset_index()
+    job_title_counts.columns = ['Job Title','Count']
+    job_title_counts.to_excel("matched_labvor_data.xlsx",index=False)
+    return job_title_counts
     
 @app.route('/', methods=['GET', 'POST'])
 def upload_files():
