@@ -10,9 +10,17 @@ import pdfplumber
 from openai import OpenAI
 app = Flask(__name__)
 app.config.update(
-    CELERY_BROKER_URL = 'REDIS://LOCALHOST:6379/0',
+    CELERY_BROKER_URL = 'redis://localhost:6379/0',
     CELERY_RESULT_BACKEND='redis://localhost:6379/0'
 )
+def make_celery(app):
+    celery = Celery(
+        app.import_name,
+        broker = app.config['CELERY_BROKER_URL']
+        brokend=app.config['CELERY_RESULT_BACKEND']
+    )
+    celery.conf.update(app.config)
+    return celery
 celery = make_celery(app)
 # Global variable for Tier 2 zip codes
 tier_2_zip_codes = [
@@ -127,7 +135,7 @@ def upload_files():
         
         pdf_file.save(pdf_path)
         excel_file.save(excel_path)
-        task = proceess_files.deploy(pdf_path, excel_path)
+        task = proceess_files.delay(pdf_path, excel_path)
         return f'Task {task.id} is running . Check the result later.'
      return render_template('upload_form.html')
 
@@ -158,10 +166,7 @@ def process_files(pdf_path, excel_path):
         # Comparing with available labor
         matched_labor = compare_with_available_labor(all_zip_codes, excel_path)
         compile_labor_data_to_excel(matched_labor, "matched_labor_data.xlsx")
-        #return the rendered template with files_ready=True
-        return render_template('upload_form.html', files_ready=False)
-    
-    return render_template('upload_form.html', file_ready=False)
+       
 @app.route('/download/<filename>')
 def download_file(filename):
     return send_file(filename, as_attachment=True)
