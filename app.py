@@ -150,7 +150,7 @@ def upload_files():
         return render_template('upload_form.html', files_ready=False)
     
     return render_template('upload_form.html', file_ready=False)
-@app.rout('/download/<filename>')
+@app.route('/download/<filename>')
 def download_file(filename):
     return send_file(filename, as_attachment=True)
     
