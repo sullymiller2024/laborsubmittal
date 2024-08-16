@@ -125,10 +125,20 @@ def upload_files():
 
         # Process the files synchronously
         process_files(pdf_path, excel_path)
+# Generate download links
+        summary_link = url_for('download_file', filename='labor_summary.xlsx')
+        matched_labor_link = url_for('download_file', filename='matched_labor_data.xlsx')
+        final_summary_link = url_for('download_file', filename='final_summary.txt')
 
-        return 'Files processed successfully. Check the result files.'
+        return f'''
+        Files processed successfully. <br>
+        <a href="{summary_link}">Download Labor Summary Excel</a><br>
+        <a href="{matched_labor_link}">Download Matched Labor Data Excel</a><br>
+        <a href="{final_summary_link}">Download Final Summary Text</a>
+        '''
 
     return render_template('upload_form.html')
+
 
 def process_files(pdf_path, excel_path):
     api_key = os.environ.get('OPENAI_API_KEY')
