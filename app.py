@@ -77,7 +77,7 @@ def compile_summaries(output_directory):
                 content = file.read()
             summaries.append(content)
     summary_text = "\n\n".join(summaries)
-    with open("final_summary.txt", "w") as file:
+    with open(os.path.join(output_directory,"final_summary.txt", "w") as file:
         file.write(summary_text)
     
 
@@ -144,7 +144,9 @@ def process_files(pdf_path, excel_path):
     api_key = os.environ.get('OPENAI_API_KEY')
     all_zip_codes = set()
     client = openai.Client(api_key=api_key)
-    output_directory = "uploads"
+    output_directory = os.path.join(app.root_path,'uploads')
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
     summary_df = pd.DataFrame(columns=['Category', 'Percentage and Conditions'])
 
     for i, text_chunk in enumerate(extract_text_from_pdf(pdf_path)):
@@ -164,11 +166,16 @@ def process_files(pdf_path, excel_path):
 
     # Comparing with available labor
     matched_labor = compare_with_available_labor(all_zip_codes, excel_path)
-    compile_labor_data_to_excel(matched_labor, "matched_labor_data.xlsx")
+    compile_labor_data_to_excel(matched_labor, os.path.join(output_directory,"matched_labor_data.xlsx"))
 
 @app.route('/download/<filename>')
 def download_file(filename):
-    return send_file(os.path.join('uploads',filename), as_attachment=True)
+    filepath=os.path.join('uploads',filename)
+    if os.path.exists(filepath):
+        return send_file(filepath, as_attachment=True)
+    else:
+        return "File not found",404
+   
 
 if __name__ == "__main__":
     app.run(debug=True)
