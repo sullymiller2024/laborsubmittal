@@ -77,7 +77,7 @@ def compile_summaries(output_directory):
                 content = file.read()
             summaries.append(content)
     summary_text = "\n\n".join(summaries)
-    with open(os.path.join(output_directory,"final_summary.txt", "w") as file:
+    with open(os.path.join(output_directory,"final_summary.txt"), "w") as file:
         file.write(summary_text)
     
 
