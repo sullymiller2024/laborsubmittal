@@ -48,7 +48,7 @@ def analyze_text_chunk(text_chunk, chunk_index, client, summary_df):
     """
 
     response = client.chat.completions.create(
-        model="gpt-4-turbo",
+        model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "Extract labor data from the following text"},
             {"role": "user", "content": prompt_text + text_chunk}
