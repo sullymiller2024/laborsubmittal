@@ -79,7 +79,7 @@ def compile_summaries(output_directory):
     summary_text = "\n\n".join(summaries)
     with open("final_summary.txt", "w") as file:
         file.write(summary_text)
-    print("Compiled summary saved to final_summary.txt")
+    
 
 def extract_zip_codes_from_text(text):
     zip_code_pattern = r'\b\d{5}\b'
@@ -89,7 +89,7 @@ def extract_zip_codes_from_text(text):
 def compile_labor_data_to_excel(data, filename="labor_data.xlsx"):
     df = pd.DataFrame(data)
     df.to_excel(filename, index=False)
-    print(f"Data compiled to Excel file: {filename}")
+   
 
 def compare_with_available_labor(required_zip_codes, available_labor_path):
     available_labor_df = pd.read_excel(available_labor_path)
@@ -98,7 +98,7 @@ def compare_with_available_labor(required_zip_codes, available_labor_path):
     matched_labor['Tier 2'] = matched_labor['ZIP/Postal Code'].apply(lambda x: "Yes" if x in tier_2_zip_codes else "No")
     job_title_counts = matched_labor['Free Form Job Title'].value_counts().reset_index()
     job_title_counts.columns = ['Job Title', 'Count']
-    job_title_counts.to_excel("matched_labor_data.xlsx", index=False)
+    compile_labor_data_to_excel(job_title_counts,"matched_labor_data.xlsx")
     return job_title_counts
 
 @app.route('/', methods=['GET', 'POST'])
@@ -144,14 +144,14 @@ def process_files(pdf_path, excel_path):
     api_key = os.environ.get('OPENAI_API_KEY')
     all_zip_codes = set()
     client = openai.Client(api_key=api_key)
-    output_directory = "."
+    output_directory = "uploads"
     summary_df = pd.DataFrame(columns=['Category', 'Percentage and Conditions'])
 
     for i, text_chunk in enumerate(extract_text_from_pdf(pdf_path)):
         summary_df = analyze_text_chunk(text_chunk, i, client, summary_df)
         print(f"Processed chunk {i+1}")
 
-    summary_df.to_excel("labor_summary.xlsx", index=False)
+    summary_df.to_excel(os.path.join(output_directory,"labor_summary.xlsx"), index=False)
 
     compile_summaries(output_directory)
 
