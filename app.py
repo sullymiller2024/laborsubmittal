@@ -158,7 +158,7 @@ def process_files(pdf_path, excel_path):
 
 @app.route('/download/<filename>')
 def download_file(filename):
-    return send_file(filename, as_attachment=True)
+    return send_file(os.path.join('uploads',filename), as_attachment=True)
 
 if __name__ == "__main__":
     app.run(debug=True)
