@@ -1,5 +1,4 @@
 from flask import Flask, request, redirect, url_for, render_template, send_file
-from celery import Celery
 import fitz  
 import io
 import pandas as pd
@@ -8,20 +7,9 @@ import os
 import re
 import pdfplumber
 from openai import OpenAI
+
 app = Flask(__name__)
-app.config.update(
-    CELERY_BROKER_URL = os.environ.get('REDIS_URL'),
-    CELERY_RESULT_BACKEND=os.environ.get('REDIS_URL')
-)
-def make_celery(app):
-    celery = Celery(
-        app.import_name,
-        broker = app.config['CELERY_BROKER_URL'],
-        brokend=app.config['CELERY_RESULT_BACKEND']
-    )
-    celery.conf.update(app.config)
-    return celery
-celery = make_celery(app)
+
 # Global variable for Tier 2 zip codes
 tier_2_zip_codes = [
     '90001', '90002', '90003', '90005', '90006', '90007', '90008', '90010', '90011', '90012',
@@ -39,7 +27,7 @@ tier_2_zip_codes = [
 ]
 
 def extract_text_from_pdf(pdf_path, chunk_size=100):
-       with fitz.open(pdf_path) as doc:
+    with fitz.open(pdf_path) as doc:
         for start in range(0, doc.page_count, chunk_size):
             text = ''
             for page_num in range(start, min(start + chunk_size, doc.page_count)):
@@ -47,8 +35,8 @@ def extract_text_from_pdf(pdf_path, chunk_size=100):
                 text += page.get_text("text")
             yield text
 
-def analyze_text_chunk(text_chunk,chunk_index, client,summary_df):
-     prompt_text = """
+def analyze_text_chunk(text_chunk, chunk_index, client, summary_df):
+    prompt_text = """
     Given the text extracted from a construction project PDF, identify and summarize the labor information based on the categories mentioned:
     - Targeted Labor: Specify the percentage and conditions for targeted labor.
     - Local Labor: Percentage required and specific conditions and list all zip codes i need all of them every single zip codes donot summerize them , donot say from a zip code to a zip code print out ALL zip code EVERY SINGLE ZIP CODE  that mentioned donot miss any of the zip codes it is ok if they are many give a list of all of them without summerize  .
@@ -56,30 +44,31 @@ def analyze_text_chunk(text_chunk,chunk_index, client,summary_df):
     - Women/Female Labor: Percentage and conditions.
       there are some hiring or requirnment like DBE or CBE or any BEs contractors they donot count as minority labors.
       Analyze the text and provide detailed summaries for each category mentioned above, highlighting any specific conditions or requirements noted in the text.Donot forget for listing zipcodes of any tiers for local labors if there is any.
-      Analyze the text and provide detailed summaries for each category, highlighting specific conditions.Be very careful because i donot want to miss any infprmation.
+      Analyze the text and provide detailed summaries for each category, highlighting specific conditions.Be very careful because i donot want to miss any information.
     """
 
-     response = client.chat.completions.create(
+    response = client.chat.completions.create(
         model="gpt-4-turbo",
         messages=[
             {"role": "system", "content": "Extract labor data from the following text"},
             {"role": "user", "content": prompt_text + text_chunk}
         ]
-     )
-     result = response.choices[0].message.content
-    #Append result to summary_df DataFrame
-     categories = ["Trageted Labor", "Local Labor", "Minority Labor", "Women/Female Labor"]
-     for category in categories:
-         match = re.search(f'{category}: (.*?)\n',result)
-         if match:
-             percentage_conditions = match.group(1)
-             summary_df = summary_df.append({'Category':category,'Percentage and Conditions': percentage_conditions},ignore_index=True)
-             
+    )
+    result = response.choices[0].message.content
+
+    # Append result to summary_df DataFrame
+    categories = ["Targeted Labor", "Local Labor", "Minority Labor", "Women/Female Labor"]
+    for category in categories:
+        match = re.search(f'{category}: (.*?)\n', result)
+        if match:
+            percentage_conditions = match.group(1)
+            summary_df = summary_df.append({'Category': category, 'Percentage and Conditions': percentage_conditions}, ignore_index=True)
 
     # Save the result to a text file
-     with open(f"analysis_result_chunk_{chunk_index}.txt", "w") as file:
+    with open(f"analysis_result_chunk_{chunk_index}.txt", "w") as file:
         file.write(result)
-     return summary_df    
+    return summary_df
+
 def compile_summaries(output_directory):
     summaries = []
     for filename in os.listdir(output_directory):
@@ -92,12 +81,10 @@ def compile_summaries(output_directory):
         file.write(summary_text)
     print("Compiled summary saved to final_summary.txt")
 
-def extract_zip_codes_from_text(text) :
-  zip_code_pattern= r'\b\d{5}\b'
-  zip_codes = re.findall(zip_code_pattern, text)
-  return set(zip_codes)
-
-
+def extract_zip_codes_from_text(text):
+    zip_code_pattern = r'\b\d{5}\b'
+    zip_codes = re.findall(zip_code_pattern, text)
+    return set(zip_codes)
 
 def compile_labor_data_to_excel(data, filename="labor_data.xlsx"):
     df = pd.DataFrame(data)
@@ -108,70 +95,70 @@ def compare_with_available_labor(required_zip_codes, available_labor_path):
     available_labor_df = pd.read_excel(available_labor_path)
     # Filter available labor by required zip codes
     matched_labor = available_labor_df[available_labor_df['ZIP/Postal Code'].isin(required_zip_codes)]
-    matched_labor['Tier 2'] = matched_labor['ZIP/Postal Code'].apply(lambda x : "Yes" if x in tier_2_zip_codes else  "No")
+    matched_labor['Tier 2'] = matched_labor['ZIP/Postal Code'].apply(lambda x: "Yes" if x in tier_2_zip_codes else "No")
     job_title_counts = matched_labor['Free Form Job Title'].value_counts().reset_index()
-    job_title_counts.columns = ['Job Title','Count']
-    job_title_counts.to_excel("matched_labvor_data.xlsx",index=False)
+    job_title_counts.columns = ['Job Title', 'Count']
+    job_title_counts.to_excel("matched_labor_data.xlsx", index=False)
     return job_title_counts
-    
+
 @app.route('/', methods=['GET', 'POST'])
 def upload_files():
     if request.method == 'POST':
-        if 'pdf_file' not in request.files or 'excel_file' not in request.files or 'excel_file' not in request.files:
+        if 'pdf_file' not in request.files or 'excel_file' not in request.files:
             return 'No file part'
-        
+
         pdf_file = request.files['pdf_file']
         excel_file = request.files['excel_file']
-        
+
         if pdf_file.filename == '' or excel_file.filename == '':
             return 'No selected file'
-        
+
         # Ensure the 'uploads' directory exists
         if not os.path.exists('uploads'):
             os.makedirs('uploads')
-        
+
         pdf_path = os.path.join('uploads', pdf_file.filename)
         excel_path = os.path.join('uploads', excel_file.filename)
-        
+
         pdf_file.save(pdf_path)
         excel_file.save(excel_path)
-        task = process_files.delay(pdf_path, excel_path)
-        return f'Task {task.id} is running . Check the result later.'
+
+        # Process the files synchronously
+        process_files(pdf_path, excel_path)
+
+        return 'Files processed successfully. Check the result files.'
+
     return render_template('upload_form.html')
 
-@celery.task
 def process_files(pdf_path, excel_path):
-        
-        api_key = os.environ.get('OPENAI_API_KEY')  # Corrected as.environ to os.environ
-        all_zip_codes = set()
-        client = openai.Client(api_key=api_key)
-        output_directory = "."
-        summary_df = pd.DataFrame(columns=['Category','Percentage and Conditions'])
-        
-        for i, text_chunk in enumerate(extract_text_from_pdf(pdf_path)):
-            summary_df = analyze_text_chunk(text_chunk, i, client,summary_df)
-            print(f"Processed chunk {i+1}")
-        summary_df.to_excel("labor_summary.xlsx",index=False)   
-           
-        
-        compile_summaries(output_directory)
-        
-        for filename in os.listdir(output_directory):
-            if filename.startswith("final_summary") and filename.endswith(".txt"):
-                with open(os.path.join(output_directory, filename), "r") as file:
-                    content = file.read()
-                    zip_codes = extract_zip_codes_from_text(content)
-                    all_zip_codes.update(zip_codes)
-        
-        # Comparing with available labor
-        matched_labor = compare_with_available_labor(all_zip_codes, excel_path)
-        compile_labor_data_to_excel(matched_labor, "matched_labor_data.xlsx")
-       
+    api_key = os.environ.get('OPENAI_API_KEY')
+    all_zip_codes = set()
+    client = openai.Client(api_key=api_key)
+    output_directory = "."
+    summary_df = pd.DataFrame(columns=['Category', 'Percentage and Conditions'])
+
+    for i, text_chunk in enumerate(extract_text_from_pdf(pdf_path)):
+        summary_df = analyze_text_chunk(text_chunk, i, client, summary_df)
+        print(f"Processed chunk {i+1}")
+
+    summary_df.to_excel("labor_summary.xlsx", index=False)
+
+    compile_summaries(output_directory)
+
+    for filename in os.listdir(output_directory):
+        if filename.startswith("final_summary") and filename.endswith(".txt"):
+            with open(os.path.join(output_directory, filename), "r") as file:
+                content = file.read()
+                zip_codes = extract_zip_codes_from_text(content)
+                all_zip_codes.update(zip_codes)
+
+    # Comparing with available labor
+    matched_labor = compare_with_available_labor(all_zip_codes, excel_path)
+    compile_labor_data_to_excel(matched_labor, "matched_labor_data.xlsx")
+
 @app.route('/download/<filename>')
 def download_file(filename):
     return send_file(filename, as_attachment=True)
-    
 
 if __name__ == "__main__":
     app.run(debug=True)
-
