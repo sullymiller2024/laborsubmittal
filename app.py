@@ -26,7 +26,7 @@ tier_2_zip_codes = [
     '91768', '91770'
 ]
 
-def extract_text_from_pdf(pdf_path, chunk_size=100):
+def extract_text_from_pdf(pdf_path, chunk_size=10):
     with fitz.open(pdf_path) as doc:
         for start in range(0, doc.page_count, chunk_size):
             text = ''
