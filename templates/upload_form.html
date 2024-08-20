@@ -3,20 +3,49 @@
 <head>
     <meta charset="UTF_8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <little>THIS IS TEST</little>
+    <little>File Upload</little>
+    <script src="https://code.jquery.com/jquesry-3.6.0.min.js"></script>
 </head>
 <body>
-    <h1>MY FORM</h1>
-    <form method="post" enctype="multipart/form-data">
-        <input type="file" name="pdf_file" required>
-        <input type="file" name = "excel_file" required>
-        <input type="submit" value="Upload">
+    <h1>Upload PDF and Excel Files</h1>
+    <form id="uploadForm" method="post" enctype="multipart/form-data">
+        <label for = "pdf_file">PDF File:</label>
+        <input type="file" id = "pdf_file" name="pdf_file" required><br><br>
+        <label for = "excel_file">Excel File:</label>
+        <input type="file" id="excel_file"  name = "excel_file" required><br><br>
+        <button type="submit">Upload and Process Files</button>
     </form>
-    {% if files_ready %}
-    <h2>Download Results</h2>
-    <a href="{{ url_for('download_file',filename='final_summary.txt')}}">Download Summary</a><br>
-    <a href="{{url_for('download_file', filename='matched_labor_data.xlsx') }}">Download Matched Labor Data</a>
-    {% endif %}
+    <script>
+    $(document).ready(function() {
+        $('#uploadForm').on('submit',function(e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+            $.ajax({
+                url:'/',
+                type: 'POST',
+                data:formData,
+                contentType: false,
+                processData:false,
+                success: function(response) {
+                    processNextChunk(0,response.pdf_path);
+                }
+            });
+        });
+        function processNextChunk(chunkIndex, pdfPath){
+            $.post('/process_chunk',{chunk_index: chunkIndex, pdf_path: pdfPath},function(response{
+                if (response.status === 'processed'){
+                    if (response.next_chunk !== undefined) {
+                        processNextChunk(response.next_chunk,pdfPath);
+                    } else {
+                        alert('Processing completed!');
+                    }
+                }
+            });
+        }
+    });
+    </script>
 </body>
 </html>
-    
+                    
+
+   
