@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF_8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <little>File Upload</little>
-    <script src="https://code.jquery.com/jquesry-3.6.0.min.js"></script>
+    <title>File Upload</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
     <h1>Upload PDF and Excel Files</h1>
@@ -32,7 +32,7 @@
             });
         });
         function processNextChunk(chunkIndex, pdfPath){
-            $.post('/process_chunk',{chunk_index: chunkIndex, pdf_path: pdfPath},function(response{
+            $.post('/process_chunk',{chunk_index: chunkIndex, pdf_path: pdfPath},function(response) {
                 if (response.status === 'processed'){
                     if (response.next_chunk !== undefined) {
                         processNextChunk(response.next_chunk,pdfPath);
