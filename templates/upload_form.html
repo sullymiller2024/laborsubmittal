@@ -58,9 +58,11 @@
 <body>
     <form id="uploadForm" method="post" enctype="multipart/form-data">
         <h1>Labor Submittal</h1>
-        <label for="pdf_file">PDF File:</label>
+        <label for="pdf_file">Project Specs:</label>
+        <p>Must be Pdf</p>
         <input type="file" id="pdf_file" name="pdf_file" required><br>
-        <label for="excel_file">Excel File:</label>
+        <label for="excel_file">Available Labors:</label>
+        <p>Must be Excel</p>
         <input type="file" id="excel_file" name="excel_file" required><br>
         <button type="submit">Upload and Process Files</button>
     </form>
