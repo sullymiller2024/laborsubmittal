@@ -185,6 +185,22 @@ def download_file(filename):
         return send_file(filepath, as_attachment=True)
     else:
         return "File not found",404
+
+@app.route('/process_chunk',methods=['POST'])
+def process_chunk():
+    pdf_path = request.form.get('pdf_path')
+    chunk_index=int(request.form.get('chunk_index',0))
+    all_zip_codes = set()
+    client = openai.Client(api_key=os.environ.get('OPENAI_API_KEY'))
+    output_directory = os.path.join(app.root_path, 'uploads')
+    summary_df = pd.DataFrame(columns=['Category','Percentage and Conditions'])
+    for i, text_chunk in enumerate(extract_text_from_pdf(pdf_path)):
+        if i == chunk_index:
+            summary_df = analyze_text_chunk(text_chunnk, i, client, summary_df)
+            break
+    summary_df.to_excel(os.path.join(output_directory, f"labor_summary_{chunk_index}.xlsx"),index=False)
+    return jsonify({'status': 'processed','next_chunk':chunk_index +1})
+        
    
 
 if __name__ == "__main__":
