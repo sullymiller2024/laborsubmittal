@@ -196,7 +196,7 @@ def process_chunk():
     summary_df = pd.DataFrame(columns=['Category','Percentage and Conditions'])
     for i, text_chunk in enumerate(extract_text_from_pdf(pdf_path)):
         if i == chunk_index:
-            summary_df = analyze_text_chunk(text_chunnk, i, client, summary_df)
+            summary_df = analyze_text_chunk(text_chunk, i, client, summary_df)
             break
     summary_df.to_excel(os.path.join(output_directory, f"labor_summary_{chunk_index}.xlsx"),index=False)
     return jsonify({'status': 'processed','next_chunk':chunk_index +1})
