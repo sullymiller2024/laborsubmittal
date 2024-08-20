@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect, url_for, render_template, send_file
+from flask import Flask, request, redirect, url_for, render_template, send_file, jsonify
 import fitz  
 import io
 import pandas as pd
