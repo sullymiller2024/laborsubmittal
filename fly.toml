@@ -1,4 +1,4 @@
-app = "mytestapp2024"
+app = "faribatest1"
 
 [build]
   dockerfile = "./Dockerfile"
