@@ -1,4 +1,4 @@
-app = "submittallog"
+app = "laborsubmittal"
 
 [build]
   dockerfile = "./Dockerfile"
