@@ -7,6 +7,9 @@ import os
 import re
 import pdfplumber
 from openai import OpenAI
+from celery import Celery
+app= Celery('myapp', broker='redis://localhost:6379/0')
+@app.task
 
 app = Flask(__name__)
 
