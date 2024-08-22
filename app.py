@@ -8,8 +8,8 @@ import re
 import pdfplumber
 from openai import OpenAI
 from celery import Celery
-celery_app = Celery('myapp', broker='redis://localhost:6379/0')
-celery_app = Celery('myapp', broker=os.environ.get('REDIS_URL'))
+celery_app = Celery('myapp', broker= os.environ.get('REDIS_URL','redis://localhost:6379/0'))
+
 
 
 app = Flask(__name__)
@@ -153,7 +153,7 @@ def upload_files():
 
     return render_template('upload_form.html')
 
-
+@celery_app.task
 def process_files(pdf_path, excel_path):
     api_key = os.environ.get('OPENAI_API_KEY')
     all_zip_codes = set()
