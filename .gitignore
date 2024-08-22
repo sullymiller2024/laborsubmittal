@@ -6,7 +6,7 @@ instance/
 *.pyo
 *.log
 *.csv
-.Ds_Store
+.DS_Store
 node_modules/
 .venv/
 *.bak
