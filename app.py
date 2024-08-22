@@ -8,8 +8,9 @@ import re
 import pdfplumber
 from openai import OpenAI
 from celery import Celery
-app= Celery('myapp', broker='redis://localhost:6379/0')
-@app.task
+celery_app = Celery('myapp', broker='redis://localhost:6379/0')
+celery_app = Celery('myapp', broker=os.environ.get('REDIS_URL'))
+
 
 app = Flask(__name__)
 
