@@ -1,4 +1,12 @@
 *.pyc
 __pycache__/
+instance/
+*.sqlite
 .env
+*.pyo
+*.log
+*.csv
+.Ds_Store
+node_modules/
 .venv/
+*.bak
