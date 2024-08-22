@@ -3,6 +3,7 @@ openai == 1.3.6
 openpyxl
 pdfplumber
 pymupdf
+PyMuPDF
 Pillow
 pytesseract
 gunicorn==22.0.0
